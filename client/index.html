@@ -67,6 +67,23 @@
         hoje.setDate(11);
 
         console.log(n1.data);
+
+        const negociacoes = new Proxy(new Negociacoes(), {
+            get(target, prop, receiver) {
+                if (typeof (target[prop]) == typeof (Function)
+                    && ['adiciona', 'esvazia'].includes(prop)) {
+                    return function () {
+                        console.log(`"${prop}" disparou a armadilha`);
+                        target[prop].apply(target, arguments);
+                    }
+                } else {
+                    //	realizando	um	get	padrão
+                    return target[prop];
+                }
+            }
+        });
+        negociacoes.adiciona(new Negociacao(new Date(), 1, 100));
+
     </script>
 </body>
 
