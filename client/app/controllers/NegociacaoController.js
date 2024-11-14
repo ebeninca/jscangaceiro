@@ -9,27 +9,43 @@ class NegociacaoController {
         this._inputQuantidade = $('#quantidade');
         this._inputValor = $('#valor');
 
-        /*this._negociacoes = new Negociacoes(model => {
-            this._negociacoesView.update(model);
-        });*/
+        this._negociacoes = new Bind(
+            new Negociacoes(),
+            new NegociacoesView('#negociacoes'),
+            'adiciona', 'esvazia'
+        );
 
-        this._negociacoesView = new NegociacoesView('#negociacoes');
+        this._mensagem = new Bind(
+            new Mensagem(),
+            new MensagemView('#mensagemView'),
+            'texto'
+        );
 
-        this._negociacoesView.update(this._negociacoes);
-
-        this._mensagem = new Mensagem();
-        this._mensagemView = new MensagemView('#mensagemView');
-        this._mensagemView.update(this._mensagem);
+        this._service = new NegociacaoService();
     }
 
     adiciona(event) {
-        event.preventDefault();
-        this._negociacoes.adiciona(this._criaNegociacao());
 
-        this._mensagem.texto = 'Negociação adicionada com sucesso';
-        this._negociacoesView.update(this._negociacoes);
-        //this._mensagemView.update(this._mensagem);
-        this._limpaFormulario();
+        try {
+
+            event.preventDefault();
+            this._negociacoes.adiciona(this._criaNegociacao());
+            this._mensagem.texto = 'Negociação adicionada com sucesso';
+            //this._negociacoesView.update(this._negociacoes);
+            this._limpaFormulario();
+
+        } catch (err) {
+
+            console.log(err);
+            console.log(err.stack);
+
+            if (err instanceof DataInvalidaException) {
+                this._mensagem.texto = err.message;
+            } else {
+                // mensagem genérica para qualquer problema que possa acontecer 
+                this._mensagem.texto = 'Um erro não esperado aconteceu. Entre em contato com o suporte';
+            }
+        }
     }
 
     _limpaFormulario() {
@@ -50,8 +66,20 @@ class NegociacaoController {
 
     apaga() {
         this._negociacoes.esvazia();
-        this._negociacoesView.update(this._negociacoes);
         this._mensagem.texto = 'Negociações apagadas com sucesso';
-        //this._mensagemView.update(this._mensagem);
+        //this._negociacoesView.update(this._negociacoes);
     }
+
+    importaNegociacoes() {
+        this._service.obtemNegociacoesDaSemana()
+            .then(
+                negociacoes => {
+                    negociacoes.forEach(negociacao => this._negociacoes.adiciona(negociacao));
+                    this._mensagem.texto = 'Negociações importadas com sucesso';
+                },
+                err => this._mensagem.texto = err
+            );
+    }
+
+
 }

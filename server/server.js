@@ -1,7 +1,8 @@
-var http = require('http')
-    ,app = require('./config/express');
+var http = require('http'), cors = require('cors'), app = require('./config/express');
 
-http.createServer(app).listen(3000, function() {
+app.use(cors({ origin: 'localhost' }));
+
+http.createServer(app).listen(3000, function () {
     console.log('Servidor escutando na porta: ' + this.address().port);
 });
 
