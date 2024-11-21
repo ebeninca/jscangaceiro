@@ -71,15 +71,49 @@ class NegociacaoController {
     }
 
     importaNegociacoes() {
-        this._service.obtemNegociacoesDaSemana()
-            .then(
-                negociacoes => {
-                    negociacoes.forEach(negociacao => this._negociacoes.adiciona(negociacao));
-                    this._mensagem.texto = 'Negociações importadas com sucesso';
-                },
-                err => this._mensagem.texto = err
-            );
+
+        Promise.all([
+            this._service.obtemNegociacoesDaSemana(),
+            this._service.obtemNegociacoesDaSemanaAnterior(),
+            this._service.obtemNegociacoesDaSemanaRetrasada()
+
+        ]).then(periodo => {
+            periodo
+                .reduce((novoArray, item) => novoArray.concat(item), [])
+                .forEach(negociacao => this._negociacoes.adiciona(negociacao));
+            this._mensagem.texto = 'Negociações importadas com sucesso';
+        }).catch(err => {
+            this._mensagem.texto = err;
+        });
     }
 
+    obtemNegociacoesDoPeriodo() {
+        // ACESSA AOS PRÓPRIOS MÉTODOS ATRAVÉS DE THIS
+        return Promise.all([
+            this.obtemNegociacoesDaSemana(),
+            this.obtemNegociacoesDaSemanaAnterior(),
+            this.obtemNegociacoesDaSemanaRetrasada()
+        ]).then(periodo => {
+            // NÃO FAZ MAIS O FOREACH 
+            return periodo
+                .reduce((novoArray, item) => novoArray.concat(item), []);
+        }).catch(err => {
+            console.log(err);
+            throw new Error('Não foi possível obter as negociações do período')
+        });
+    }
 
+    importaNegociacoes() {
+
+        this._service
+            .obtemNegociacoesDoPeriodo()
+            .then(negociacoes => {
+                negociacoes.filter(novaNegociacao =>
+                    !this._negociacoes.paraArray().some(negociacaoExistente => novaNegociacao
+                        .equals(negociacaoExistente)))
+                    .forEach(negociacao => this._negociacoes.adiciona(negociacao));
+                this._mensagem.texto = 'Negociações do período importadas com sucesso';
+            })
+            .catch(err => this._mensagem.texto = err);
+    }
 }
